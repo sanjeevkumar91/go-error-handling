@@ -1,0 +1,72 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    <changeSet id="1" author="sanjeev">
+        <createTable schemaName="public" tableName="users">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="users"/>
+        </rollback>
+    </changeSet>
+    <changeSet id="2" author="sanjeev">
+        <addColumn schemaName="public" tableName="users">
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql>
+            ALTER TABLE users
+            ADD CONSTRAINT validate_email
+            CHECK (email LIKE '%@%');
+        </sql>
+        <rollback>
+            <dropColumn tableName="users" schemaName="public" columnName="created_at" />
+            <sql>
+                ALTER TABLE public.users
+                DROP CONSTRAINT IF EXISTS validate_email;
+            </sql>
+        </rollback>
+    </changeSet>
+        <changeSet id="3" author="sanjeev">
+        <sql>
+            CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+            INSERT INTO public.users (id, name, email)
+            VALUES
+            (uuid_generate_v4(), 'Sanjeev', 'sanjeev@test.com'),
+            (uuid_generate_v4(), 'Rajesh', 'rajesh@test.com');
+        </sql>
+        <rollback>
+            <delete schemaName="public" tableName="users">
+                <where>email IN ('sanjeev@test.com',  'rajesh@test.com')</where>
+            </delete>
+        </rollback>
+    </changeSet>        
+    <changeSet id="4" author="sanjeev">
+        <createTable tableName="posts">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="uuid">
+                <constraints nullable="false" foreignKeyName="fk_posts_users" references="users(id)"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="body" type="text"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="posts"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
